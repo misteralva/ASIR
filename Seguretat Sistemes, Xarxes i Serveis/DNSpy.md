@@ -214,7 +214,7 @@ En la captura se aprecian dos tramas correspondientes al ciclo completo de la co
 
 **Panel de hexdump:** al seleccionar la trama de respuesta se observa el texto ASCII incrustado en el paquete (`secreto.com` y la IP de respuesta `4.3.2.1`), lo que demuestra cómo la información viaja embebida dentro de la estructura estándar de las peticiones DNS.
 
-![Captura de Wireshark con las dos tramas DNS](img/wireshark-dns.png)
+![Captura de Wireshark con las dos tramas DNS](img/wireshark.png)
 
 ---
 
