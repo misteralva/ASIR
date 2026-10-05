@@ -4,16 +4,38 @@ Prueba de concepto de **exfiltración de datos a través del protocolo DNS**, us
 
 ## Índice
 
-1. [Comprobación del entorno](#1-comprobación-del-entorno)
-2. [Scripts](#2-scripts)
-3. [Instalación de dependencias](#3-instalación-de-dependencias)
-4. [Captura con Wireshark](#4-captura-con-wireshark)
-5. [Ejecución](#5-ejecución)
-6. [Análisis de la captura](#6-análisis-de-la-captura)
+1. [Arquitectura de la prueba](#1-arquitectura-de-la-prueba)
+2. [Comprobación del entorno](#2-comprobación-del-entorno)
+3. [Scripts](#3-scripts)
+4. [Instalación de dependencias](#4-instalación-de-dependencias)
+5. [Captura con Wireshark](#5-captura-con-wireshark)
+6. [Ejecución](#6-ejecución)
+7. [Análisis de la captura de Wireshark](#7-análisis-de-la-captura-de-wireshark)
 
 ---
 
-## 1. Comprobación del entorno
+## 1. Arquitectura de la prueba
+
+> **Importante:** en esta PoC, cliente y servidor se ejecutan en **la misma máquina** (la VM con IP estática `192.168.6.100`). No son dos equipos distintos — por eso en la captura de Wireshark tanto el origen como el destino de las tramas muestran la misma IP. El cliente se apunta a la IP real de la interfaz de red (en vez de a `127.0.0.1`) precisamente para forzar que el tráfico pase por la interfaz física/virtual y así poder capturarlo con Wireshark, en lugar de viajar por loopback.
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente<br/>dns_client_1_peticion.py<br/>(192.168.6.100)
+    participant S as Servidor<br/>dns_server_1_peticion.py<br/>(192.168.6.100:53/UDP)
+
+    Note over C: Codifica "datos ocultos"<br/>a hexadecimal
+    C->>S: Query DNS tipo A<br/>6461746f73...6c746f73.secreto.com
+    Note over S: Extrae el subdominio<br/>y lo decodifica de hex a texto
+    Note over S: "datos ocultos" recuperado
+    S-->>C: Response DNS (NOERROR)<br/>secreto.com → 4.3.2.1
+    Note over C: Conexión cerrada<br/>tras 1 petición/respuesta
+```
+
+El dato que se quiere exfiltrar (`datos ocultos`) nunca viaja en un campo "sospechoso": va camuflado dentro del nombre de dominio consultado, que es justo el tipo de tráfico que casi ningún firewall bloquea o inspecciona en profundidad.
+
+---
+
+## 2. Comprobación del entorno
 
 Antes de ejecutar los scripts se comprobó la versión de Python 3 instalada, para asegurar la compatibilidad:
 
@@ -23,7 +45,7 @@ python3 --version
 
 ---
 
-## 2. Scripts
+## 3. Scripts
 
 Para realizar la prueba usando la IP real de la red estática de la VM (en lugar de `127.0.0.1`), se dejó el servidor escuchando en todas las interfaces y se apuntó el cliente a la IP estática.
 
@@ -142,7 +164,7 @@ print("Fin del envío")
 
 ---
 
-## 3. Instalación de dependencias
+## 4. Instalación de dependencias
 
 Al ejecutar los scripts, Python lanzó un error al no encontrar el módulo `dns.message`. En Debian 13 se solucionó instalando la librería oficial desde los repositorios del sistema:
 
@@ -153,7 +175,7 @@ sudo apt install python3-dnspython -y
 
 ---
 
-## 4. Captura con Wireshark
+## 5. Captura con Wireshark
 
 Instalación de Wireshark:
 
@@ -174,7 +196,7 @@ En la interfaz gráfica:
 
 ---
 
-## 5. Ejecución
+## 6. Ejecución
 
 Con Wireshark capturando en segundo plano, se abrieron dos terminales en la carpeta de los scripts (`~/Desktop`):
 
@@ -198,26 +220,55 @@ Al ejecutarse, el servidor capturó la consulta, decodificó el subdominio `6461
 
 ---
 
-## 6. Análisis de la captura de Wireshark
+## 7. Análisis de la captura de Wireshark
 
-En la captura se aprecian dos tramas correspondientes al ciclo completo de la comunicación DNS:
+### Qué mirar y por qué
 
-**Trama 1 — Petición (Query)**
+Al abrir la captura conviene fijarse en tres sitios concretos, cada uno responde a una pregunta distinta:
 
-- **Source / Destination:** `192.168.6.100 → 192.168.6.100`, lo que confirma que la petición se envió a la IP estática de la interfaz de red de la VM y no a la interfaz de loopback (`127.0.0.1`).
-- **Info:** `Standard query 0x4a2e A 6461746f73206f63756c746f73.secreto.com` — la consulta del cliente solicitando el registro `A` para el subdominio que contiene el texto en hexadecimal.
+| Dónde mirar | Qué confirma |
+|---|---|
+| **Source / Destination** | Que el tráfico pasó realmente por la interfaz de red (y no por loopback) |
+| **Info** | El payload exfiltrado, visible en texto plano dentro del propio nombre de dominio consultado |
+| **Panel de hexdump** (bytes crudos) | Que ese mismo dato va embebido en la estructura estándar del paquete DNS, sin ningún campo "extra" ni cifrado |
 
-**Trama 2 — Respuesta (Response)**
+### Trama 1 — Petición (Query)
+
+- **Source / Destination:** `192.168.6.100 → 192.168.6.100` — confirma que la petición se envió a la IP estática de la interfaz de red de la VM y no a la interfaz de loopback (`127.0.0.1`). Al ser cliente y servidor la misma máquina, origen y destino coinciden, pero el punto clave es que **no es `127.0.0.1`**: la trama atravesó la interfaz de red real y por tanto es equivalente a lo que vería un firewall o un sniffer colocado en el perímetro de una red.
+- **Length:** 100 bytes.
+- **Info:** `Standard query 0x4a2e A 6461746f73206f63756c746f73.secreto.com`
+
+  El subdominio decodifica así:
+
+  ```
+  6461746f73206f63756c746f73  (hex)
+          ↓
+  "datos ocultos"             (texto)
+  ```
+
+### Trama 2 — Respuesta (Response)
 
 - **Source / Destination:** `192.168.6.100 → 192.168.6.100`.
-- **Info:** `Standard query response 0x4a2e A 6461746f73206f63756c746f73.secreto.com` — la contestación del script servidor con código `NOERROR`.
+- **Length:** 116 bytes.
+- **Info:** `Standard query response 0x4a2e A 6461746f73206f63756c746f73.secreto.com` — respuesta del servidor con código `NOERROR` y el registro `A` ficticio `secreto.com → 4.3.2.1`.
 
-**Panel de hexdump:** al seleccionar la trama de respuesta se observa el texto ASCII incrustado en el paquete (`secreto.com` y la IP de respuesta `4.3.2.1`), lo que demuestra cómo la información viaja embebida dentro de la estructura estándar de las peticiones DNS.
+**Panel de hexdump:** al seleccionar la trama de respuesta se observa el texto ASCII incrustado en el paquete (`secreto.com` y la IP de respuesta `4.3.2.1`). No hay ningún campo adicional ni cabecera fuera de lo estándar: el dato viaja camuflado dentro de la propia estructura de una consulta DNS legítima.
 
 ![Captura de Wireshark con las dos tramas DNS](img/wireshark.png)
 
+### Por qué esto es interesante en seguridad
+
+Para un **sniffer de red** o un **firewall con inspección profunda de paquetes (DPI)**, estas dos tramas son indistinguibles, a primera vista, de cualquier resolución DNS normal: mismo protocolo, mismo puerto (53/UDP), misma estructura de petición/respuesta. No hay payload "extra" que destaque, ni un puerto raro, ni cifrado que levante alertas. El dato exfiltrado está disfrazado como si fuera simplemente el nombre de un subdominio a resolver.
+
+Esto es precisamente lo que hace del DNS un canal atractivo para **exfiltración de datos y comunicación con servidores de mando y control (C2)**: el tráfico DNS saliente casi nunca se bloquea (una red sin DNS no funciona) y rara vez se inspecciona con el mismo rigor que HTTP/HTTPS.
+
+### Una limitación técnica real: el tamaño
+
+El campo `Length` de las tramas (100 y 116 bytes) no es casual — está acotado por los límites del propio protocolo DNS:
+
+- Cada **etiqueta** (segmento entre puntos) de un nombre de dominio puede tener como máximo **63 caracteres**.
+- El **FQDN completo** no puede superar los **253 caracteres**.
+
+Esto significa que, por consulta, solo se pueden exfiltrar unos pocos bytes de datos codificados en hexadecimal (el doble de caracteres que el dato original, al estar en hex). Un mensaje largo necesitaría **fragmentarse en múltiples consultas DNS**, lo cual es justo como funcionan las herramientas reales de DNS tunneling (p. ej. `dnscat2`, `iodine`).
+
 ---
-
-## Conclusión
-
-Esta PoC demuestra el principio básico de la **exfiltración de datos vía DNS (DNS tunneling)**: al codificar información en subdominios de consultas DNS legítimas, los datos pueden salir de una red atravesando controles de firewall que normalmente permiten el tráfico DNS sin inspeccionarlo en profundidad. Es una técnica relevante tanto desde el punto de vista ofensivo (exfiltración, C2) como defensivo (detección mediante análisis de entropía/longitud de subdominios, DNS sinkholes, etc.).
