@@ -1,6 +1,6 @@
 # DNSpy — Exfiltración de datos mediante consultas DNS (PoC)
 
-Prueba de concepto de **exfiltración de datos a través del protocolo DNS**, usando Python y `dnspython` para codificar un mensaje oculto dentro de un subdominio y capturando el tráfico resultante con Wireshark.
+Esta es una prueba de concepto que muestra cómo se puede **esconder un mensaje dentro de una consulta DNS** y enviarlo de una máquina a otra sin que parezca nada raro. Se usa Python con la librería `dnspython` y se captura el tráfico con Wireshark para ver cómo viaja la información.
 
 ## Índice
 
@@ -10,34 +10,36 @@ Prueba de concepto de **exfiltración de datos a través del protocolo DNS**, us
 4. [Instalación de dependencias](#4-instalación-de-dependencias)
 5. [Captura con Wireshark](#5-captura-con-wireshark)
 6. [Ejecución](#6-ejecución)
-7. [Análisis de la captura de Wireshark](#7-análisis-de-la-captura-de-wireshark)
+7. [Análisis de la captura](#7-análisis-de-la-captura)
 
 ---
 
 ## 1. Arquitectura de la prueba
 
-> **Importante:** en esta PoC, cliente y servidor se ejecutan en **la misma máquina** (la VM con IP estática `192.168.6.100`). No son dos equipos distintos — por eso en la captura de Wireshark tanto el origen como el destino de las tramas muestran la misma IP. El cliente se apunta a la IP real de la interfaz de red (en vez de a `127.0.0.1`) precisamente para forzar que el tráfico pase por la interfaz física/virtual y así poder capturarlo con Wireshark, en lugar de viajar por loopback.
+> **Importante:** en esta prueba, el cliente y el servidor se ejecutan en **la misma máquina** (una VM con IP fija `192.168.6.100`). No son dos ordenadores distintos. Por eso, en la captura de Wireshark, el origen y el destino de los paquetes muestran la misma IP. El cliente se configura para enviar los datos a esa IP (en vez de a `127.0.0.1`, que es la dirección local de la propia máquina) para obligar a que el tráfico pase por la tarjeta de red de verdad, y así poder capturarlo con Wireshark.
+
+Así funciona el proceso, paso a paso:
 
 ```mermaid
 sequenceDiagram
     participant C as Cliente<br/>dns_client_1_peticion.py<br/>(192.168.6.100)
     participant S as Servidor<br/>dns_server_1_peticion.py<br/>(192.168.6.100:53/UDP)
 
-    Note over C: Codifica "datos ocultos"<br/>a hexadecimal
-    C->>S: Query DNS tipo A<br/>6461746f73...6c746f73.secreto.com
-    Note over S: Extrae el subdominio<br/>y lo decodifica de hex a texto
-    Note over S: "datos ocultos" recuperado
-    S-->>C: Response DNS (NOERROR)<br/>secreto.com → 4.3.2.1
-    Note over C: Conexión cerrada<br/>tras 1 petición/respuesta
+    Note over C: Convierte "datos ocultos"<br/>a hexadecimal
+    C->>S: Consulta DNS tipo A<br/>6461746f73...6c746f73.secreto.com
+    Note over S: Separa el subdominio<br/>y lo convierte de hex a texto
+    Note over S: Recupera "datos ocultos"
+    S-->>C: Respuesta DNS (NOERROR)<br/>secreto.com → 4.3.2.1
+    Note over C: Termina tras<br/>1 petición y 1 respuesta
 ```
 
-El dato que se quiere exfiltrar (`datos ocultos`) nunca viaja en un campo "sospechoso": va camuflado dentro del nombre de dominio consultado, que es justo el tipo de tráfico que casi ningún firewall bloquea o inspecciona en profundidad.
+El mensaje que se quiere enviar en secreto (`datos ocultos`) no viaja en un campo raro ni oculto: va metido dentro del propio nombre de dominio que se consulta. Por eso este tipo de tráfico es difícil de detectar: a simple vista parece una consulta DNS normal y corriente.
 
 ---
 
 ## 2. Comprobación del entorno
 
-Antes de ejecutar los scripts se comprobó la versión de Python 3 instalada, para asegurar la compatibilidad:
+Antes de ejecutar los scripts, se comprobó qué versión de Python 3 había instalada, para asegurarnos de que fuera compatible:
 
 ```bash
 python3 --version
@@ -47,11 +49,11 @@ python3 --version
 
 ## 3. Scripts
 
-Para realizar la prueba usando la IP real de la red estática de la VM (en lugar de `127.0.0.1`), se dejó el servidor escuchando en todas las interfaces y se apuntó el cliente a la IP estática.
+Para que la prueba usara la IP real de la red (y no `127.0.0.1`), el servidor se dejó escuchando en todas las interfaces de red, y en el cliente se puso directamente la IP fija de la máquina.
 
-### 2.1 Servidor — `dns_server_1_peticion.py`
+### 3.1 Servidor — `dns_server_1_peticion.py`
 
-Escucha en `0.0.0.0:53/UDP`, extrae el subdominio de la petición, decodifica el texto en hexadecimal y responde con un registro `A` ficticio (`4.3.2.1`).
+Este script se queda escuchando en `0.0.0.0:53/UDP` (es decir, en todas las interfaces de red, puerto 53). Cuando le llega una consulta, saca el subdominio, lo convierte de hexadecimal a texto normal, y responde con una IP falsa (`4.3.2.1`).
 
 ```python
 #!/usr/bin/python3
@@ -125,9 +127,9 @@ while True:
     break
 ```
 
-### 2.2 Cliente — `dns_client_1_peticion.py`
+### 3.2 Cliente — `dns_client_1_peticion.py`
 
-Se cambió la variable `servidor` de `127.0.0.1` a la IP fija de la VM (`192.168.6.100`) para que las tramas se enviasen realmente por la interfaz de red.
+Aquí se cambió la variable `servidor`: en vez de `127.0.0.1`, se puso la IP fija de la VM (`192.168.6.100`), para que los paquetes salieran de verdad por la red.
 
 ```python
 #!/usr/bin/python3
@@ -166,7 +168,7 @@ print("Fin del envío")
 
 ## 4. Instalación de dependencias
 
-Al ejecutar los scripts, Python lanzó un error al no encontrar el módulo `dns.message`. En Debian 13 se solucionó instalando la librería oficial desde los repositorios del sistema:
+Al intentar ejecutar los scripts, Python dio un error porque no encontraba el módulo `dns.message`. En Debian 13 se solucionó instalando la librería desde los repositorios oficiales:
 
 ```bash
 sudo apt update
@@ -177,36 +179,36 @@ sudo apt install python3-dnspython -y
 
 ## 5. Captura con Wireshark
 
-Instalación de Wireshark:
+Primero se instaló Wireshark:
 
 ```bash
 sudo apt install wireshark -y
 ```
 
-Ejecución con privilegios de superusuario:
+Y se abrió con permisos de superusuario (necesarios para capturar tráfico de red):
 
 ```bash
 sudo wireshark
 ```
 
-En la interfaz gráfica:
+Dentro del programa:
 
-- Se seleccionó la interfaz **any** (*Capturing from any*).
-- Se aplicó el filtro `dns` en la barra de filtros.
+- Se eligió la interfaz **any** (es decir, capturar de todas las interfaces).
+- Se escribió el filtro `dns` para ver solo el tráfico DNS y no mezclarlo con otros paquetes.
 
 ---
 
 ## 6. Ejecución
 
-Con Wireshark capturando en segundo plano, se abrieron dos terminales en la carpeta de los scripts (`~/Desktop`):
+Con Wireshark ya capturando en segundo plano, se abrieron dos terminales en la carpeta donde estaban los scripts (`~/Desktop`):
 
-**Terminal 1 — Servidor** (se ejecuta con `sudo` para poder abrir el puerto restringido 53/UDP):
+**Terminal 1 — Servidor.** Se ejecuta con `sudo` porque el puerto 53 solo lo puede abrir el administrador del sistema:
 
 ```bash
 sudo python3 dns_server_1_peticion.py
 ```
 
-Salida inicial: `Esperando 1 peticion DNS...`
+El servidor se queda esperando y muestra: `Esperando 1 peticion DNS...`
 
 **Terminal 2 — Cliente:**
 
@@ -214,61 +216,59 @@ Salida inicial: `Esperando 1 peticion DNS...`
 sudo python3 dns_client_1_peticion.py
 ```
 
-Al ejecutarse, el servidor capturó la consulta, decodificó el subdominio `6461746f73206f63756c746f73` a `datos ocultos`, respondió al cliente con la IP `4.3.2.1` y ambos programas finalizaron con éxito.
+Al lanzar el cliente, el servidor recibe la consulta, convierte el subdominio `6461746f73206f63756c746f73` de hexadecimal a texto (`datos ocultos`), responde con la IP `4.3.2.1`, y los dos programas terminan sin errores.
 
 ![Terminales mostrando la ejecución del cliente y el servidor](img/terminales.png)
 
 ---
 
-## 7. Análisis de la captura de Wireshark
+## 7. Análisis de la captura
 
 ### Qué mirar y por qué
 
-Al abrir la captura conviene fijarse en tres sitios concretos, cada uno responde a una pregunta distinta:
+En la captura hay que fijarse en tres sitios, y cada uno nos dice algo distinto:
 
-| Dónde mirar | Qué confirma |
+| Dónde mirar | Qué nos dice |
 |---|---|
-| **Source / Destination** | Que el tráfico pasó realmente por la interfaz de red (y no por loopback) |
-| **Info** | El payload exfiltrado, visible en texto plano dentro del propio nombre de dominio consultado |
-| **Panel de hexdump** (bytes crudos) | Que ese mismo dato va embebido en la estructura estándar del paquete DNS, sin ningún campo "extra" ni cifrado |
+| **Source / Destination** | Que el tráfico pasó de verdad por la red, y no por la conexión local de la máquina |
+| **Info** | El mensaje escondido, que se puede leer directamente dentro del nombre de dominio consultado |
+| **Panel de bytes (hexdump)** | Que ese mismo dato va metido dentro de un paquete DNS totalmente normal, sin nada cifrado ni añadido |
 
 ### Trama 1 — Petición (Query)
 
-- **Source / Destination:** `192.168.6.100 → 192.168.6.100` — confirma que la petición se envió a la IP estática de la interfaz de red de la VM y no a la interfaz de loopback (`127.0.0.1`). Al ser cliente y servidor la misma máquina, origen y destino coinciden, pero el punto clave es que **no es `127.0.0.1`**: la trama atravesó la interfaz de red real y por tanto es equivalente a lo que vería un firewall o un sniffer colocado en el perímetro de una red.
-- **Length:** 100 bytes.
+- **Source / Destination:** `192.168.6.100 → 192.168.6.100`. Esto confirma que el paquete salió por la interfaz de red real y no por `127.0.0.1`. Como el cliente y el servidor son la misma máquina, el origen y el destino coinciden, pero lo importante es que **no sea loopback**: así el paquete es igual al que vería un firewall o alguien escuchando el tráfico de una red real.
+- **Tamaño (Length):** 100 bytes.
 - **Info:** `Standard query 0x4a2e A 6461746f73206f63756c746f73.secreto.com`
 
-  El subdominio decodifica así:
+  El subdominio, traducido, dice esto:
 
   ```
-  6461746f73206f63756c746f73  (hex)
+  6461746f73206f63756c746f73  (hexadecimal)
           ↓
-  "datos ocultos"             (texto)
+  "datos ocultos"             (texto normal)
   ```
 
 ### Trama 2 — Respuesta (Response)
 
 - **Source / Destination:** `192.168.6.100 → 192.168.6.100`.
-- **Length:** 116 bytes.
-- **Info:** `Standard query response 0x4a2e A 6461746f73206f63756c746f73.secreto.com` — respuesta del servidor con código `NOERROR` y el registro `A` ficticio `secreto.com → 4.3.2.1`.
+- **Tamaño (Length):** 116 bytes.
+- **Info:** `Standard query response 0x4a2e A 6461746f73206f63756c746f73.secreto.com` — es la respuesta del servidor, con código `NOERROR` y la IP falsa `4.3.2.1` para el dominio `secreto.com`.
 
-**Panel de hexdump:** al seleccionar la trama de respuesta se observa el texto ASCII incrustado en el paquete (`secreto.com` y la IP de respuesta `4.3.2.1`). No hay ningún campo adicional ni cabecera fuera de lo estándar: el dato viaja camuflado dentro de la propia estructura de una consulta DNS legítima.
+**Panel de bytes:** si se selecciona la trama de respuesta, en el panel de la derecha se puede leer en ASCII el texto `secreto.com` y la IP `4.3.2.1` dentro de los bytes del paquete. No hay ningún campo especial ni nada fuera de lo normal: el dato va escondido dentro de la estructura habitual de un paquete DNS.
 
 ![Captura de Wireshark con las dos tramas DNS](img/wireshark.png)
 
-### Por qué esto es interesante en seguridad
+### Por qué esto importa en seguridad
 
-Para un **sniffer de red** o un **firewall con inspección profunda de paquetes (DPI)**, estas dos tramas son indistinguibles, a primera vista, de cualquier resolución DNS normal: mismo protocolo, mismo puerto (53/UDP), misma estructura de petición/respuesta. No hay payload "extra" que destaque, ni un puerto raro, ni cifrado que levante alertas. El dato exfiltrado está disfrazado como si fuera simplemente el nombre de un subdominio a resolver.
+Si alguien está vigilando la red con un sniffer, o si hay un firewall que inspecciona los paquetes en profundidad, estas dos tramas parecen una consulta DNS cualquiera: mismo protocolo, mismo puerto (53/UDP), misma estructura de siempre. No hay nada que llame la atención a simple vista. El mensaje secreto está disfrazado como si fuera solo el nombre de un subdominio que se quiere resolver.
 
-Esto es precisamente lo que hace del DNS un canal atractivo para **exfiltración de datos y comunicación con servidores de mando y control (C2)**: el tráfico DNS saliente casi nunca se bloquea (una red sin DNS no funciona) y rara vez se inspecciona con el mismo rigor que HTTP/HTTPS.
+Por eso el DNS es un canal tan usado para **sacar datos de una red sin permiso (exfiltración)** o para que un malware hable con su servidor de control: casi ninguna red bloquea el tráfico DNS saliente (si lo hiciera, dejaría de funcionar Internet para esa red), y normalmente se revisa con mucha menos atención que el tráfico web.
 
-### Una limitación técnica real: el tamaño
+### Un límite real de esta técnica: el tamaño
 
-El campo `Length` de las tramas (100 y 116 bytes) no es casual — está acotado por los límites del propio protocolo DNS:
+El tamaño de las tramas (100 y 116 bytes) no es casualidad: el protocolo DNS tiene límites fijos.
 
-- Cada **etiqueta** (segmento entre puntos) de un nombre de dominio puede tener como máximo **63 caracteres**.
-- El **FQDN completo** no puede superar los **253 caracteres**.
+- Cada parte del nombre de dominio (entre puntos) puede tener como máximo **63 caracteres**.
+- El nombre completo no puede pasar de **253 caracteres** en total.
 
-Esto significa que, por consulta, solo se pueden exfiltrar unos pocos bytes de datos codificados en hexadecimal (el doble de caracteres que el dato original, al estar en hex). Un mensaje largo necesitaría **fragmentarse en múltiples consultas DNS**, lo cual es justo como funcionan las herramientas reales de DNS tunneling (p. ej. `dnscat2`, `iodine`).
-
----
+Esto quiere decir que en una sola consulta solo se puede esconder un mensaje bastante corto, porque al pasar el texto a hexadecimal ocupa el doble de caracteres que el original. Si se quisiera enviar un mensaje más largo, habría que **partirlo en varias consultas DNS**, que es justo lo que hacen herramientas reales de este tipo, como `dnscat2` o `iodine`.
