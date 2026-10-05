@@ -52,11 +52,4 @@ Each module folder has its own `README.md` explaining its contents.
 
 ---
 
-## 🔗 Related projects
-
-- [**AlwaysOnTech**](https://github.com/misteralva/AlwaysOnTech-Red-Empresarial) — full enterprise network built in Cisco Packet Tracer
-- [**lec-database**](https://github.com/misteralva/lec-database) — PHP + MySQL web app with stored procedures, roles and auditing
-
----
-
 *Academic work, published for learning purposes.*
