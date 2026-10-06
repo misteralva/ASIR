@@ -49,7 +49,7 @@ Para tener dos servidores, lo más rápido es clonar la máquina virtual que ya 
 3. Ponle de nombre a la copia `debian-slave`.
 4. En la opción **Política de dirección MAC**, elige **Reiniciar la dirección MAC de todas las tarjetas de red**. Esto es importante: si las dos máquinas tuvieran la misma dirección MAC, podría haber conflictos en la red.
 
-![Ventana de clonado de VirtualBox con la opción de reiniciar la MAC seleccionada](captura-01-clonado.png)
+![Ventana de clonado de VirtualBox con la opción de reiniciar la MAC seleccionada](img/captura-01-clonado.png)
 
 ### 1.2 Configurar los adaptadores de red
 
@@ -58,7 +58,7 @@ En **las dos** máquinas virtuales hay que configurar dos adaptadores de red:
 - **Adaptador 1:** en modo **NAT**, para que las máquinas tengan salida a Internet.
 - **Adaptador 2:** en modo **Red interna** (por ejemplo, con el nombre `intnet`), para que las dos máquinas se puedan comunicar entre ellas.
 
-![Configuración de red en VirtualBox con Adaptador 1 en NAT y Adaptador 2 en Red interna](captura-02-adaptadores.png)
+![Configuración de red en VirtualBox con Adaptador 1 en NAT y Adaptador 2 en Red interna](img/captura-02-adaptadores.png)
 
 ### 1.3 Cambiar el nombre de la VM Esclava
 
@@ -76,7 +76,7 @@ sudo nano /etc/hosts
 
 Y cambiar cualquier referencia al nombre antiguo por `debian-slave`.
 
-![Terminal mostrando la salida de hostnamectl con el nuevo nombre debian-slave](captura-03-hostname.png)
+![Terminal mostrando la salida de sudo nano /etc/hosts con el nuevo nombre debian-slave](img/captura-03-hostname.png)
 
 ---
 
@@ -109,7 +109,7 @@ Reinicia el servicio de red para que se aplique el cambio:
 sudo systemctl restart networking
 ```
 
-![Fichero /etc/network/interfaces del Maestro y salida de ip a show enp0s8 confirmando la IP .100](captura-04-red-master.png)
+![Fichero /etc/network/interfaces del Maestro y salida de ip a show enp0s8 confirmando la IP .100](img/captura-04-red-master.png)
 
 ### 2.2 Servidor Esclavo (`debian-slave` — 192.168.6.101)
 
@@ -142,7 +142,7 @@ Y comprueba que el Esclavo puede comunicarse con el Maestro:
 ping -c 3 192.168.6.100
 ```
 
-![Salida exitosa del comando ping -c 3 192.168.6.100 ejecutado desde el Esclavo](captura-05-ping.png)
+![Salida exitosa del comando ping -c 3 192.168.6.100 ejecutado desde el Esclavo](img/captura-05-ping.png)
 
 ---
 
@@ -161,7 +161,7 @@ Solo en el Maestro, se crea además una carpeta para guardar los ficheros de las
 sudo mkdir -p /etc/bind/zones
 ```
 
-![Confirmación de que BIND9 se instaló correctamente](captura-06-bind9-instalado.png)
+![Confirmación de que BIND9 se instaló correctamente](img/captura-06-bind9-instalado.png)
 
 ---
 
