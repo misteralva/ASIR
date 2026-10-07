@@ -196,7 +196,7 @@ ns2     IN      A       192.168.6.101
 debian  IN      A       192.168.6.100
 ```
 
-![Editor nano mostrando el contenido del archivo de la zona directa](captura-07-zona-directa.png)
+![Editor nano mostrando el contenido del archivo de la zona directa](img/captura-07-zona-directa.png)
 
 ### 4.2 Zona inversa: de IP a nombre
 
@@ -226,7 +226,7 @@ $TTL    604800
 101     IN      PTR     ns2.myguest.virtualbox.org.
 ```
 
-![Editor nano mostrando el contenido del archivo de la zona inversa](captura-08-zona-inversa.png)
+![Editor nano mostrando el contenido del archivo de la zona inversa](img/captura-08-zona-inversa.png)
 
 ### 4.3 Avisar a BIND9 de que estas zonas existen
 
@@ -273,7 +273,7 @@ Y por último, se reinicia BIND9 en el Maestro para que cargue la nueva configur
 sudo systemctl restart bind9
 ```
 
-![Terminal mostrando named-checkzone devolviendo OK](captura-09-checkzone-ok.png)
+![Terminal mostrando named-checkzone devolviendo OK](img/captura-09-checkzone-ok.png)
 
 ---
 
@@ -314,7 +314,7 @@ sudo named-checkconf
 sudo systemctl restart bind9
 ```
 
-![Contenido de /etc/bind/named.conf.local en la máquina Esclava](captura-10-named-conf-slave.png)
+![Contenido de /etc/bind/named.conf.local en la máquina Esclava](img/captura-10-named-conf-slave.png)
 
 ---
 
@@ -330,7 +330,7 @@ ls -l /var/cache/bind/
 
 Si aparecen los ficheros `db.myguest.virtualbox.org` y `db.6.168.192`, quiere decir que la transferencia se hizo correctamente.
 
-![Salida de ls -l /var/cache/bind/ mostrando los ficheros de zona copiados](captura-11-ls-cache-bind.png)
+![Salida de ls -l /var/cache/bind/ mostrando los ficheros de zona copiados](img/captura-11-ls-cache-bind.png)
 
 ### 6.2 Probar que el Esclavo resuelve nombres correctamente
 
@@ -342,7 +342,7 @@ dig @127.0.0.1 debian.myguest.virtualbox.org
 
 Debería devolver `status: NOERROR` y la IP `192.168.6.100` en la sección `ANSWER`.
 
-![Resultado de dig directo mostrando status NOERROR y la IP 192.168.6.100](captura-12-dig-directo.png)
+![Resultado de dig directo mostrando status NOERROR y la IP 192.168.6.100](img/captura-12-dig-directo.png)
 
 **Resolución inversa** (pedirle un nombre a partir de una IP):
 
@@ -352,6 +352,6 @@ dig @127.0.0.1 -x 192.168.6.100
 
 Debería devolver `status: NOERROR` y el nombre `debian.myguest.virtualbox.org.` en la sección `ANSWER`.
 
-![Resultado de dig inverso mostrando status NOERROR y el nombre debian.myguest.virtualbox.org](captura-13-dig-inverso.png)
+![Resultado de dig inverso mostrando status NOERROR y el nombre debian.myguest.virtualbox.org](img/captura-13-dig-inverso.png)
 
 Si las dos pruebas dan resultado correcto, significa que el Esclavo está funcionando igual que el Maestro, y que si el Maestro se cayera, el Esclavo podría seguir respondiendo a las consultas DNS de la red.
