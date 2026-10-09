@@ -391,7 +391,7 @@ ldapadd -x -D "cn=admin,dc=planetafp,dc=local" -W -H ldap://localhost -f estruct
 - `-H ldap://localhost`: servidor al que se conecta.
 - `-f`: fichero LDIF que se carga.
 
-Salida esperada:
+Salida:
 
 ```text
 Enter LDAP Password:
@@ -411,7 +411,7 @@ ldapsearch -x -H ldap://localhost -b "ou=alumno,dc=planetafp,dc=local" -s sub "(
 - `"(uid=jperez)"`: filtro de búsqueda, entre comillas para que la consola no interprete los paréntesis.
 - `uid cn mail`: atributos que se quieren ver. Sin ellos se muestran todos.
 
-Salida esperada:
+Salida:
 
 ```text
 dn: uid=jperez,ou=alumno,dc=planetafp,dc=local
