@@ -1,9 +1,5 @@
 # Playbook de Despliegue Técnico: Servidor OpenLDAP (planetafp.local)
 
-> **Cómo usar este documento:** sigue las fases en orden, de la Fase 0 a la Fase 5. Cada paso tiene el comando, una explicación sencilla de lo que hace y la captura que demuestra que funcionó. Las capturas están en la carpeta `capturas/`.
->
-> **Seguridad:** en este documento no se escribe la contraseña real del sistema ni la del administrador de LDAP. Donde hace falta, se indica "contraseña elegida".
-
 ---
 
 ## 1. Objetivo
