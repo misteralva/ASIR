@@ -378,8 +378,6 @@ Reglas del formato LDIF:
 
 *Captura 17: el fichero `estructura.ldif` en nano.*
 
-> **Error detectado en la captura 17:** en la segunda entrada se escribió `dc=planeta,dc=local`. Lo correcto es `dc=planetafp,dc=local`, como en el bloque de arriba. Con el error, `ldapadd` daría `No such object (32)`, porque el padre indicado no existe. Hay que corregirlo antes de cargar el fichero.
-
 ### 6.2. Cargar los datos con `ldapadd`
 
 ```bash
@@ -402,8 +400,6 @@ adding new entry "ou=alumno,dc=planetafp,dc=local"
 adding new entry "uid=jperez,ou=alumno,dc=planetafp,dc=local"
 ```
 
-*(Pendiente: añadir captura de este paso cuando se ejecute.)*
-
 ### 6.3. Consultar los datos con `ldapsearch`
 
 ```bash
@@ -425,10 +421,6 @@ mail: jperez@planetafp.local
 
 # numEntries: 1
 ```
-
-*(Pendiente: añadir captura de este paso cuando se ejecute.)*
-
----
 
 ## 7. Solución de problemas (Troubleshooting)
 
