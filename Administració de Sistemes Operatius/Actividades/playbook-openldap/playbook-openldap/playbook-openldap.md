@@ -422,16 +422,41 @@ mail: jperez@planetafp.local
 # numEntries: 1
 ```
 
-## 7. Solución de problemas (Troubleshooting)
+## 7. Control de errores y solución de problemas (Troubleshooting)
+ 
+### 7.1. Errores encontrados
+ 
+#### Error 1. Error de sintaxis en el LDIF
+ 
+- **Mensaje:** `ldap_add: Invalid syntax (21)`, `ldif_read_file: ... line N` o `Object class violation (65)`.
+- **Causa:** el fichero `.ldif` está mal escrito. Los motivos más comunes son: falta la línea en blanco entre entradas, hay un espacio al principio de una línea, falta un atributo obligatorio (`cn` o `sn` en `inetOrgPerson`), la clase está mal escrita o hay tildes sin codificar.
+- **Cómo comprobarlo:** `cat -A estructura.ldif`. Este comando muestra los espacios y saltos de línea ocultos (el final de cada línea sale marcado con `$`).
+- **Solución:** corregir la línea que indica el mensaje. Revisar que cada entrada tenga `dn`, `objectClass` y todos los atributos obligatorios, y que haya una línea en blanco entre entradas.
+#### Error 2. La entrada padre no existe
+ 
+- **Mensaje:** `ldap_add: No such object (32)`.
+- **Causa:** se intenta crear una entrada cuyo padre no existe. Hay dos casos típicos: poner el usuario antes que su unidad organizativa, o escribir mal el dominio en el `dn`.
+- **Por ejemplo nso ha pasado de poner `dc=planeta,dc=local` en vez de `dc=planetafp,dc=local`. Ese padre no existe, así que `ldapadd` daría este error.
+- **Cómo comprobarlo:** comparar el `dn` con el dominio real (`dc=planetafp,dc=local`) y mirar el orden de las entradas.
+- **Solución:** corregir el dominio y dejar siempre la unidad (`ou=alumno`) antes que el usuario (`uid=jperez,ou=alumno,...`).
+#### Error 3. La entrada ya existe
+ 
+- **Mensaje:** `ldap_add: Already exists (68)`.
+- **Causa:** se ejecutó `ldapadd` dos veces con el mismo fichero, o ya existe una entrada con ese `dn`.
+- **Cómo comprobarlo:** `ldapsearch -x -H ldap://localhost -b "dc=planetafp,dc=local" "(uid=jperez)"`.
+- **Solución:** usar otro `dn`, o borrar la entrada con `ldapdelete`, o cambiarla con `ldapmodify`.
+#### Error 4. Contraseña o usuario de administrador incorrectos (bind)
+ 
+- **Mensaje:** `ldap_bind: Invalid credentials (49)`.
+- **Causa:** la contraseña está mal, o el `dn` del administrador está mal escrito en `-D` (por ejemplo `dc=planeta` en vez de `dc=planetafp`).
+- **Cómo comprobarlo:** `ldapwhoami -x -D "cn=admin,dc=planetafp,dc=local" -W -H ldap://localhost`. Si la contraseña es correcta, devuelve el `dn` del administrador.
+- **Solución:** revisar el valor de `-D` y escribir bien la contraseña. Si se olvidó, se puede ejecutar `sudo dpkg-reconfigure slapd` para poner una nueva, pero esto **recrea la base de datos y se pierden los datos**.
 
-| Nº | Síntoma o error | Causa probable | Solución |
-| --- | --- | --- | --- |
-| 1 | `Invalid syntax (21)` o `Object class violation (65)` | Error en el LDIF: falta una línea en blanco, falta un atributo obligatorio (`cn`, `sn`), clase mal escrita o tildes. | Revisar el fichero línea a línea. Usar `cat -A estructura.ldif` para ver espacios y saltos de línea ocultos. |
-| 2 | `No such object (32)` | Se crea una entrada cuyo padre no existe. También ocurre si el dominio del `dn` está mal escrito (por ejemplo `dc=planeta` en vez de `dc=planetafp`). | Poner los padres primero. Revisar que el dominio sea `dc=planetafp,dc=local`. |
-| 3 | `Already exists (68)` | Ya existe una entrada con ese `dn`. | Usar otro `dn`, o borrar la entrada con `ldapdelete`, o cambiarla con `ldapmodify`. |
-| 4 | `Invalid credentials (49)` | Contraseña incorrecta o `dn` del administrador mal escrito. | Revisar el valor de `-D`. Si se olvidó la contraseña, se puede ejecutar `sudo dpkg-reconfigure slapd` (esto recrea la base y se pierden los datos). |
-| 5 | `Can't contact LDAP server (-1)` | `slapd` está parado, la URL es incorrecta o el puerto no responde. | Ejecutar `sudo systemctl status slapd` y `sudo systemctl restart slapd`. Comprobar el puerto con `sudo ss -tlnp \| grep 389`. Revisar el valor de `-H`. |
-| 6 | `Name or service not known` al usar `ldapserver.planetafp.local` | Falta la línea en `/etc/hosts` o está mal escrita. | Revisar `/etc/hosts` y probar con `getent hosts ldapserver.planetafp.local`. |
-| 7 | `apt update` falla con `Temporary failure resolving` | Falta la puerta de enlace o los DNS en Netplan. | Revisar `routes` y `nameservers` en el YAML, ejecutar `sudo netplan apply` y probar `ping 8.8.8.8`. |
-| 8 | `netplan apply` da errores de YAML | Indentación incorrecta o tabuladores. | Usar solo espacios. Ejecutar `sudo netplan generate` y corregir la línea que indique. |
+#### Error 5. Netplan da errores de YAML
+ 
+- **Mensaje:** errores al ejecutar `netplan try` o `netplan apply`, con un número de línea.
+- **Causa:** indentación incorrecta, uso de tabuladores o un guion mal puesto.
+- **Cómo comprobarlo:** `sudo netplan generate`. Este comando valida el fichero y dice qué línea falla.
+- **Solución:** usar solo espacios y comparar con el bloque YAML de la Fase 1. Se recomienda usar siempre `netplan try`: si la red se rompe, vuelve sola a la configuración anterior a los 120 segundos.
+---
 
