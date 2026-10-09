@@ -443,26 +443,3 @@ mail: jperez@planetafp.local
 | 7 | `apt update` falla con `Temporary failure resolving` | Falta la puerta de enlace o los DNS en Netplan. | Revisar `routes` y `nameservers` en el YAML, ejecutar `sudo netplan apply` y probar `ping 8.8.8.8`. |
 | 8 | `netplan apply` da errores de YAML | Indentación incorrecta o tabuladores. | Usar solo espacios. Ejecutar `sudo netplan generate` y corregir la línea que indique. |
 
----
-
-## 8. Lista de comprobación final
-
-Marca cada punto cuando esté hecho:
-
-- [x] Red NAT `RedLDAP` creada con `20.0.0.0/24` y sin DHCP (captura 1).
-- [x] Adaptador de la máquina virtual conectado a `RedLDAP` (captura 2).
-- [x] Ubuntu Server instalado con usuario `honeynet` y servidor `ldapserver` (captura 3).
-- [x] IP fija `20.0.0.5/24` aplicada con Netplan (capturas 4 a 7).
-- [x] Salida a Internet comprobada con `ping` (captura 8).
-- [x] Línea añadida en `/etc/hosts` y resolución comprobada (capturas 9 y 10).
-- [x] `slapd` y `ldap-utils` instalados.
-- [x] `slapd` reconfigurado con `planetafp.local` y `planetafp` (capturas 11 y 12).
-- [x] Servicio `slapd` activo y escuchando en el puerto 389 (capturas 13 y 14).
-- [x] Esquemas `core`, `cosine`, `nis` e `inetorgperson` cargados (captura 15).
-- [x] Directorio base `dc=planetafp,dc=local` comprobado (captura 16).
-- [ ] Fichero `estructura.ldif` corregido (`dc=planetafp`, no `dc=planeta`) (captura 17).
-- [ ] Datos cargados con `ldapadd` y consultados con `ldapsearch`.
-
----
-
-*Playbook elaborado como guía de despliegue de OpenLDAP en un entorno de laboratorio.*
