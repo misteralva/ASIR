@@ -1,5 +1,8 @@
-# Playbook de Despliegue Técnico: Servidor OpenLDAP (planetafp.local)
+# Playbook de Despliegue Técnico: Servidor OpenLDAP (planetafp.local) #
 
+```texto
+Hecho por: David Alvarez y Alex Naranjo
+```
 ---
 
 ## 1. Objetivo
