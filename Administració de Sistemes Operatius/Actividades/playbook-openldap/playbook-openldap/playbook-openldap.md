@@ -425,6 +425,9 @@ mail: jperez@planetafp.local
 # numEntries: 1
 ```
 
+![Ldapsearch](capturas/18-comprobacion.png)
+
+
 ## 7. Control de errores y solución de problemas (Troubleshooting)
  
 ### 7.1. Errores encontrados
