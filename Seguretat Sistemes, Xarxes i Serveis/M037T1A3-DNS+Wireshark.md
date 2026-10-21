@@ -1,30 +1,4 @@
-# Actividad 2: Seguridad en el DNS con Wireshark
-
-| Datos de la práctica | |
-| --- | --- |
-| **Módulo** | 037 Seguridad en servicios |
-| **Ciclo formativo** | ASIX |
-| **Alumno** | *(escribir aquí nombre y apellidos)* |
-| **Práctica** | Seguridad en el DNS |
-
----
-
-## Índice
-
-1. [Introducción](#1-introducción)
-2. [Esquema del laboratorio](#2-esquema-del-laboratorio)
-3. [Parte 1: Preparar las máquinas virtuales](#3-parte-1-preparar-las-máquinas-virtuales)
-4. [Parte 2: Configurar el servidor](#4-parte-2-configurar-el-servidor)
-5. [Parte 3: Comprobar el cliente](#5-parte-3-comprobar-el-cliente)
-6. [Parte 4: Instalar y preparar Wireshark](#6-parte-4-instalar-y-preparar-wireshark)
-7. [Parte 5: Peticiones DNS normales (sin cifrar)](#7-parte-5-peticiones-dns-normales-sin-cifrar)
-8. [Parte 6: Gráfico del camino de una petición DNS](#8-parte-6-gráfico-del-camino-de-una-petición-dns)
-9. [Parte 7: DNS sobre HTTPS (DoH)](#9-parte-7-dns-sobre-https-doh)
-10. [Conclusiones](#10-conclusiones)
-11. [Problemas frecuentes](#11-problemas-frecuentes)
-12. [Lista de capturas](#12-lista-de-capturas)
-
----
+# Actividad: Seguridad en el DNS con Wireshark
 
 ## 1. Introducción
 
@@ -299,8 +273,6 @@ sudo iptables -t nat -L -n -v
 ### Paso 2.5: Instalar y configurar DHCP y DNS con dnsmasq
 
 El programa `dnsmasq` hace las dos funciones a la vez: **DHCP** (da IP al Cliente) y **DNS reenviador** (pregunta a otros servidores DNS por el Cliente).
-
-> **Nota:** Si en clase ya se configuró un servidor DHCP (por ejemplo `isc-dhcp-server`) y un DNS (por ejemplo `bind9`) con reenviador, **este paso se puede omitir** y se continúa en la Parte 3.
 
 1. Instalamos el programa:
 
@@ -747,7 +719,7 @@ Para contar los paquetes mostrados, miramos la **barra inferior** de Wireshark: 
 
 ![Captura 26](img/26-navegador-filtro.png)
 
-### Tabla de resultados de la petición 3 (rellenar con lo observado)
+### Tabla de resultados de la petición 3
 
 | Dato | Resultado |
 | --- | --- |
@@ -971,7 +943,7 @@ Como las consultas DoH van cifradas, Wireshark no puede mostrarlas. Para verlas 
 
 *(Si se usa Google Chrome, se abre con:* `google-chrome --ssl-key-log-file=$HOME/sslkeys.log` *)*
 
-### Tabla de resultados con DoH (rellenar con lo observado)
+### Tabla de resultados con DoH 
 
 | Dato | Resultado |
 | --- | --- |
