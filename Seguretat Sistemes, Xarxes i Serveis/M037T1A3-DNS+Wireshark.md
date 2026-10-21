@@ -766,8 +766,6 @@ sequenceDiagram
     C->>C: 7. Usa la IP para conectarse (ping o navegador)
 ```
 
-> **Nota:** GitHub muestra este gráfico automáticamente. Si se prefiere, se puede sustituir por un dibujo propio hecho con otra herramienta (por ejemplo draw.io) y guardarlo como imagen.
-
 ### Explicación paso a paso
 
 | Paso | Qué ocurre |
