@@ -3,9 +3,6 @@
 Práctica ASIR · Seguridad en servicios
 Autor: David · GitHub: [misteralva](https://github.com/misteralva)
 
-> **Antes de subir:** sustituye cada bloque `📸 CAPTURA` por tu imagen (`![texto](capturas/nombre.png)`), rellena los campos `____` y borra esta nota.
-> Al final del documento tienes una tabla con todas las capturas y el nombre sugerido para cada archivo.
-
 ---
 
 ## Índice
@@ -22,8 +19,6 @@ Autor: David · GitHub: [misteralva](https://github.com/misteralva)
 10. [Limpieza de la prueba](#10-limpieza-de-la-prueba)
 11. [Complain frente a enforce](#11-complain-frente-a-enforce)
 12. [Reflexión: accesos permitidos y por qué](#12-reflexión-accesos-permitidos-y-por-qué)
-13. [Conclusiones](#13-conclusiones)
-14. [Índice de capturas](#14-índice-de-capturas)
 
 ---
 
@@ -51,8 +46,9 @@ AppArmor es un sistema de **Control de Acceso Obligatorio (MAC)**: complementa l
 | Auditoría | `auditd` (eventos en `/var/log/audit/audit.log`) |
 | Máquina | ____ (VirtualBox / Proxmox / física) |
 
-📸 **CAPTURA 01** — `cat /etc/os-release`, `uname -r`, `nginx -v` y `apparmor_parser --version`.
-`capturas/01-entorno.png`
+**Captura 01** — `cat /etc/os-release`, `uname -r`, `nginx -v` y `apparmor_parser --version`.
+
+![Captura 01](img/01-entorno.png)
 
 ---
 
@@ -87,8 +83,9 @@ sudo systemctl enable --now nginx
 - `curl`: genera tráfico HTTP.
 - `systemctl enable --now`: arranca el servicio ya (`--now`) y en cada arranque (`enable`).
 
-📸 **CAPTURA 02** — instalación de los paquetes terminada (o `dpkg -l | grep -E 'nginx|apparmor|auditd'`).
-`capturas/02-instalacion.png`
+**Captura 02** — instalación de los paquetes terminada (o `dpkg -l | grep -E 'nginx|apparmor|auditd'`).
+
+![Captura 02](img/02-instalacion.png)
 
 ### 3.3 Comprobaciones previas
 
@@ -104,8 +101,9 @@ sudo aa-status
 - `curl -I`: pide solo las cabeceras; debe devolver `200 OK`.
 - `aa-status`: lista los perfiles cargados y su modo. Nginx **aún no** debe aparecer.
 
-📸 **CAPTURA 03** — salida de las cuatro órdenes (Nginx funcionando y **sin** perfil).
-`capturas/03-nginx-inicial.png`
+**Captura 03** — salida de las cuatro órdenes (Nginx funcionando y **sin** perfil).
+
+![Captura 03](img/03-nginx-inicial.png)
 
 ### 3.4 Página de prueba
 
@@ -117,8 +115,9 @@ curl -s http://localhost/prueba.html
 - `tee` escribe como root (con un simple `>` la redirección usaría tu usuario y fallaría).
 - La página sirve para generar accesos a archivos de `/var/www/html`.
 
-📸 **CAPTURA 04** — respuesta del `curl` a `prueba.html`.
-`capturas/04-pagina-prueba.png`
+**Captura 04** — respuesta del `curl` a `prueba.html`.
+
+![Captura 04](img/04-pagina-prueba.png)
 
 ---
 
@@ -157,8 +156,9 @@ sudo systemctl reload nginx
 - Los `curl`: provocan la lectura de la web y la escritura de logs. La petición a `/noexiste` ejercita el `error.log`.
 - `reload`: ejercita el archivo PID y las señales.
 
-📸 **CAPTURA 05** — Terminal 1 con `aa-genprof` esperando y Terminal 2 con los `curl`.
-`capturas/05-genprof-curl.png`
+**Captura 05** — Terminal 1 con `aa-genprof` esperando y Terminal 2 con los `curl`.
+
+![Captura 05](img/05-genprof-curl.png)
 
 ### 4.1 Ajuste con `aa-logprof`
 
@@ -193,11 +193,13 @@ Opciones del menú: `(A)llow`, `(D)eny`, `(I)gnorar`, `(G)lob` (generaliza la ru
 | `/etc/group`, `/etc/passwd`, `/etc/nsswitch.conf` | Allow, solo lectura | Resolver el usuario y grupo `www-data` |
 | Reglas `network ...` con IP y puerto concretos | **Ignorar** | Incluían el puerto efímero del cliente. Se sustituyeron por `network inet stream,` y `network inet6 stream,` |
 
-📸 **CAPTURA 06** — varias preguntas de `aa-logprof` con tu decisión (por ejemplo `dac_override`, la elección entre `abstractions/nis` y `capability net_bind_service`, y el glob de `/var/log/nginx/*`).
-`capturas/06-logprof-decisiones.png`
+**Captura 06** — varias preguntas de `aa-logprof` con tu decisión (por ejemplo `dac_override`, la elección entre `abstractions/nis` y `capability net_bind_service`, y el glob de `/var/log/nginx/*`).
 
-📸 **CAPTURA 07** — pantalla final de `aa-logprof` guardando los cambios (`Save Changes`).
-`capturas/07-logprof-guardar.png`
+![Captura 06](img/06-logprof-decisiones.png)
+
+**Captura 07** — pantalla final de `aa-logprof` guardando los cambios (`Save Changes`).
+
+![Captura 07](img/07-logprof-guardar.png)
 
 ---
 
@@ -225,8 +227,9 @@ profile="/usr/sbin/nginx" name="/var/log/nginx/access.log" comm="nginx" requeste
 - `name`: recurso al que se accedió.
 - `requested_mask`: tipo de acceso (`r` lectura, `w` escritura...).
 
-📸 **CAPTURA 08** — eventos `ALLOWED` de Nginx (archivos, `capable`, sockets).
-`capturas/08-eventos-allowed.png`
+**Captura 08** — eventos `ALLOWED` de Nginx (archivos, `capable`, sockets).
+
+![Captura 08](img/08-eventos-allowed.png)
 
 ---
 
@@ -280,8 +283,9 @@ include <tunables/global>
 }
 ```
 
-📸 **CAPTURA 09** — `sudo cat /etc/apparmor.d/usr.sbin.nginx` completo.
-`capturas/09-perfil-final.png`
+**Captura 09** — `sudo cat /etc/apparmor.d/usr.sbin.nginx` completo.
+
+![Captura 09](img/09-perfil-final.png)
 
 ### 6.2 Reglas `deny` explícitas
 
@@ -316,8 +320,9 @@ sudo aa-status | sed -n '/profiles are in enforce mode/,/profiles are in complai
 - `head -n 8`: la cabecera debe ser `/usr/sbin/nginx {` **sin** `flags=(complain)`.
 - La orden con `sed`: imprime solo el bloque de perfiles en *enforce* y filtra Nginx.
 
-📸 **CAPTURA 10** — cabecera del perfil sin `flags=(complain)` y `aa-status` con Nginx en *enforce*.
-`capturas/10-enforce-activo.png`
+**Captura 10** — cabecera del perfil sin `flags=(complain)` y `aa-status` con Nginx en *enforce*.
+
+![Captura 10](img/10-enforce-activo.png)
 
 ---
 
@@ -347,11 +352,13 @@ sudo nginx -t && sudo systemctl restart nginx
 
 **Lección:** no se debe pasar a enforce sin probar el **arranque y el reinicio** completos, no solo las peticiones HTTP. `aa-logprof` no propuso estas reglas porque no se había ejercitado ese camino durante el aprendizaje.
 
-📸 **CAPTURA 11** — el error `chown(...) failed (13: Permission denied)` (`sudo systemctl status nginx` o `journalctl -xeu nginx`).
-`capturas/11-error-chown.png`
+**Captura 11** — el error `chown(...) failed (13: Permission denied)` (`sudo systemctl status nginx` o `journalctl -xeu nginx`).
 
-📸 **CAPTURA 12** — el perfil con `capability chown` y `/var/lib/nginx/**`, y Nginx arrancando bien tras la recarga.
-`capturas/12-correccion-chown.png`
+![Captura 11](img/11-error-chown.png)
+
+**Captura 12** — el perfil con `capability chown` y `/var/lib/nginx/**`, y Nginx arrancando bien tras la recarga.
+
+![Captura 12](img/12-correccion-chown.png)
 
 ---
 
@@ -373,11 +380,13 @@ sudo grep -a 'apparmor="DENIED"' /var/log/audit/audit.log | grep nginx
 
 **Resultado obtenido:** servicio activo, respuesta `200 OK`, master y worker confinados bajo el perfil y sin denegaciones inesperadas.
 
-📸 **CAPTURA 13** — `systemctl status`, `curl -I` y `curl` a `prueba.html`.
-`capturas/13-nginx-funciona.png`
+**Captura 13** — `systemctl status`, `curl -I` y `curl` a `prueba.html`.
 
-📸 **CAPTURA 14** — `aa-status | grep -i nginx` (con los PID) y el `grep DENIED` sin resultados.
-`capturas/14-aa-status-sin-denied.png`
+![Captura 13](img/13-nginx-funciona.png)
+
+**Captura 14** — `aa-status | grep -i nginx` (con los PID) y el `grep DENIED` sin resultados.
+
+![Captura 14](img/14-aa-status-sin-denied.png)
 
 ---
 
@@ -397,8 +406,9 @@ location = /shadow { alias /etc/shadow; }
 sudo nginx -t && sudo systemctl restart nginx
 ```
 
-📸 **CAPTURA 15** — el bloque `location = /shadow` en el archivo de configuración y `nginx -t` correcto.
-`capturas/15-location-shadow.png`
+**Captura 15** — el bloque `location = /shadow` en el archivo de configuración y `nginx -t` correcto.
+
+![Captura 15](img/15-location-shadow.png)
 
 ### 9.2 Superar el filtro DAC
 
@@ -414,8 +424,9 @@ sudo -u www-data head -n 1 /etc/shadow
 - `restart nginx`: los procesos deben reiniciarse para heredar el nuevo grupo.
 - `sudo -u www-data head -n 1 /etc/shadow`: lee la primera línea **como `www-data`, fuera de Nginx** (no está confinado por el perfil). Si funciona, confirma que el DAC ya lo permite.
 
-📸 **CAPTURA 16** — `sudo -u www-data head -n 1 /etc/shadow` funcionando (el DAC lo permite).
-`capturas/16-dac-permite.png`
+**Captura 16** — `sudo -u www-data head -n 1 /etc/shadow` funcionando (el DAC lo permite).
+
+![Captura 16](img/16-dac-permite.png)
 
 ### 9.3 Denegación implícita y registro
 
@@ -450,11 +461,13 @@ Interpretación de los campos:
 
 **Conclusión:** como `www-data` ya podía leer el archivo por permisos (captura 16), el bloqueo lo realizó **AppArmor**, que es el objetivo de la prueba.
 
-📸 **CAPTURA 17** — `curl -i http://localhost/shadow` con `403 Forbidden`.
-`capturas/17-403-forbidden.png`
+**Captura 17** — `curl -i http://localhost/shadow` con `403 Forbidden`.
 
-📸 **CAPTURA 18** — la línea `apparmor="DENIED"` sobre `/etc/shadow`.
-`capturas/18-denied-shadow.png`
+![Captura 17](img/17-403-forbidden.png)
+
+**Captura 18** — la línea `apparmor="DENIED"` sobre `/etc/shadow`.
+
+![Captura 18](img/18-denied-shadow.png)
 
 ### 9.4 Perfil definitivo con `audit deny`
 
@@ -475,8 +488,9 @@ sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.nginx
 | `deny` explícito | Sí (prioridad máxima) | **No**, salvo que lleve `audit` |
 | `audit deny` explícito | Sí | Sí |
 
-📸 **CAPTURA 19** — el perfil con las dos líneas `audit deny /etc/shadow ...` y la recarga sin errores.
-`capturas/19-audit-deny.png`
+**Captura 19** — el perfil con las dos líneas `audit deny /etc/shadow ...` y la recarga sin errores.
+
+![Captura 19](img/19-audit-deny.png)
 
 ---
 
@@ -507,8 +521,9 @@ curl -I http://localhost/
 - `grep -rn`: no debe encontrar la ruta de prueba.
 - `curl -I`: el servicio sigue respondiendo `200 OK`.
 
-📸 **CAPTURA 20** — `id www-data`, `Permission denied` al leer `/etc/shadow`, `grep` sin resultados y `curl -I` con `200 OK`.
-`capturas/20-limpieza.png`
+**Captura 20** — `id www-data`, `Permission denied` al leer `/etc/shadow`, `grep` sin resultados y `curl -I` con `200 OK`.
+
+![Captura 20](img/20-limpieza.png)
 
 ---
 
@@ -551,50 +566,3 @@ Todo lo que Nginx pidió se resume en: **arrancar, resolver su usuario, cambiar 
 - Reglas de red atadas a IP y puerto efímero del cliente: solo valían para una conexión concreta.
 - Escritura sobre `/etc/**`, `/var/www/**` o `/etc/passwd`: un servidor web no la necesita.
 - `/etc/shadow`: bloqueado explícitamente.
-
-## 13. Conclusiones
-
-- AppArmor **complementa** al DAC: reduce el daño si el servicio es comprometido, aunque se ejecute como root.
-- Un perfil se construye **iterando**: aprender en complain, revisar cada regla, probar y solo entonces pasar a enforce.
-- Hay que probar **arranque, reinicio y recarga**, no solo las peticiones HTTP (caso del `chown`).
-- Conviene elegir siempre la regla **más específica** y revisar lo que `aa-logprof` propone en lugar de aceptarlo todo.
-- Un `deny` sin `audit` bloquea **en silencio**; para evidencias hay que usar `audit deny` o la denegación implícita.
-- AppArmor no sustituye a las actualizaciones, el cortafuegos ni la monitorización: forma parte de la defensa en profundidad.
-
----
-
-## 14. Índice de capturas
-
-| Nº | Qué debe mostrar | Archivo |
-|---|---|---|
-| 01 | Versiones: SO, kernel, Nginx, AppArmor | `01-entorno.png` |
-| 02 | Instalación de paquetes | `02-instalacion.png` |
-| 03 | Nginx funcionando sin perfil | `03-nginx-inicial.png` |
-| 04 | Página de prueba | `04-pagina-prueba.png` |
-| 05 | `aa-genprof` + `curl` en dos terminales | `05-genprof-curl.png` |
-| 06 | Decisiones en `aa-logprof` | `06-logprof-decisiones.png` |
-| 07 | Guardado del perfil | `07-logprof-guardar.png` |
-| 08 | Eventos `ALLOWED` | `08-eventos-allowed.png` |
-| 09 | Perfil final completo | `09-perfil-final.png` |
-| 10 | Perfil sin `flags=(complain)` + `aa-status` en enforce | `10-enforce-activo.png` |
-| 11 | Error `chown ... Permission denied` | `11-error-chown.png` |
-| 12 | Corrección del `chown` | `12-correccion-chown.png` |
-| 13 | Nginx responde (status, `curl -I`, `prueba.html`) | `13-nginx-funciona.png` |
-| 14 | `aa-status` con PID y sin `DENIED` | `14-aa-status-sin-denied.png` |
-| 15 | `location = /shadow` + `nginx -t` | `15-location-shadow.png` |
-| 16 | `www-data` lee `/etc/shadow` fuera de Nginx (DAC permite) | `16-dac-permite.png` |
-| 17 | `403 Forbidden` | `17-403-forbidden.png` |
-| 18 | Evento `DENIED` sobre `/etc/shadow` | `18-denied-shadow.png` |
-| 19 | Perfil con `audit deny` | `19-audit-deny.png` |
-| 20 | Limpieza y verificación final | `20-limpieza.png` |
-
-### Estructura del repositorio
-
-```
-apparmor-nginx/
-├── README.md
-├── perfil/usr.sbin.nginx
-├── logs/complain.log
-├── logs/enforce.log
-└── capturas/
-```
